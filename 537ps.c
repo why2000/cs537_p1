@@ -12,6 +12,18 @@ int main(int argc, char* argv[]){
     const char* rootName = "/proc/";
     if(parseOption(argc, argv, &optionFlags) != 0)
         return 1;
+    printf("%-10s", "PID");
+    if(optionFlags.s)
+        printf("%-10s", "STATE");
+    if(optionFlags.U)
+        printf("%-10s", "UTIME");
+    if(optionFlags.S)
+        printf("%-10s", "STIME");
+    if(optionFlags.v)
+        printf("%-10s", "SIZE");
+    if(optionFlags.c)
+        printf("%-10s", "CMDLINE");
+    printf("\n");
     if(optionFlags.p){
         parseSingleProc(rootName, optionFlags, 0);
         free(optionFlags.pid);

@@ -49,7 +49,7 @@ int parseOption(const int argc, char* argv[], OptionFlags* const optionFlags){
                 break;
             default:
                 printf("Unknown option: -%c\n"
-                       "Usage: ps537 [-p <pid>] [-s] [-U] [-S] [-v] [-c]\n", optopt);
+                       "Usage: ps537 [-p <pid>] [-s[-]] [-U[-]] [-S[-]] [-v[-]] [-c[-]]\n", optopt);
                 return 1;
         }
         if(argFlag != 0) {

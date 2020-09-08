@@ -29,7 +29,7 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     char state;
     char cmdLine[MAX_LINE];
     unsigned long utime, stime, size;
-    if(fscanf(fp, "%*d %*s %c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %lu %lu",
+    if(fscanf(fp, "%*d %*s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu",
               &state, &utime, &stime) != 3)
         printf("stat file format failed.\n");
     fclose(fp);
@@ -46,11 +46,10 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
         printf("Library call failed.\n");
         return 1;
     }
-    fseek(fp, 0, SEEK_END);
-    unsigned long fSize = ftell(fp);
-    if(fSize>=MAX_LINE||fread(cmdLine, sizeof(char), fSize, fp)<fSize){
-        printf("Unable to read cmdLine\n");
-    }
+    unsigned int fSize;
+    fSize = fread(cmdLine, sizeof(char), MAX_LINE, fp);
+    if(fSize == MAX_LINE)
+        printf("cmdline length exceed limit");
     for(int i = 0; i < fSize; i++){
         if(cmdLine[i] == '\0'&&i != fSize-1)
             cmdLine[i] = ' ';
@@ -59,17 +58,15 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     fclose(fp);
     fp = NULL;
     // output
-    printf("%s\t", optionFlags.pid);
+    printf("%-10s", optionFlags.pid);
     if(optionFlags.s)
-        printf("%c\t", state);
-    if(optionFlags.s)
-        printf("%c\t", state);
+        printf("%-10c", state);
     if(optionFlags.U)
-        printf("%lu\t", utime);
+        printf("%-10lu", utime);
     if(optionFlags.S)
-        printf("%lu\t", stime);
+        printf("%-10lu", stime);
     if(optionFlags.v)
-        printf("%lu\t", size);
+        printf("%-10lu", size);
     if(optionFlags.c)
         printf("%s",cmdLine);
     printf("\n");
@@ -87,14 +84,15 @@ int checkUser(const char* const fullDir){
         printf("Unable to open file.\n");
     }
     int sameUidFlag = 0;
-    while(fgets(buf, MAX_LINE, stdin)){
+    while(fgets(buf, MAX_LINE, fp)){
         if(strncmp(buf, "Uid:", 4) == 0){
             fclose(fp);
             fp = NULL;
             uid_t realUid;
-            if(sscanf(buf, "%*s\t%d", &realUid)!=2){
-                printf("Unable to read uid.\n");
-                return 1;
+            if(sscanf(buf, "%*s\t%d", &realUid)!=1){
+                // Unable to read uid: should belong to another user
+                //printf("Unable to read uid.\n");
+                return 0;
             }
             if(realUid == uid)
                 sameUidFlag = 1;
