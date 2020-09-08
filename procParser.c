@@ -6,9 +6,10 @@
 
 int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, const int checkUserFlag){
     const int MAX_LINE = 2048;
+    FILE* fp;
     char procDir[MAX_LINE], fullDir[MAX_LINE];
     if(!strncpy(procDir, rootName, MAX_LINE)||(procDir[MAX_LINE-1] = '\0', !strcat(procDir, optionFlags.pid))){
-        printf("String action failed.\n");
+        printf("Library call failed.\n");
         return 1;
     }
     // now all strings are safe, use strcpy for convenience
@@ -17,30 +18,65 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
             printf("String action failed.\n");
             return 1;
         }
-        if(!checkUser(fullDir)){
-            return 0;
-        }
+        if(!checkUser(fullDir))
+            return 0; // skip this proc
     }
     // read info
-    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/stat")){
-        printf("String action failed.\n");
+    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/stat")||!(fp = fopen(fullDir, "r"))){
+        printf("Library call failed.\n");
         return 1;
     }
-    FILE* fp;
-    if(!(fp = fopen(fullDir, "r"))){
-        printf("Unable to open file\n");
-    }
     char state;
-    unsigned long utime, stime;
+    char cmdLine[MAX_LINE];
+    unsigned long utime, stime, size;
     if(fscanf(fp, "%*d %*s %c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %lu %lu",
-              &state, &utime, &stime) != 3){
+              &state, &utime, &stime) != 3)
         printf("stat file format failed.\n");
+    fclose(fp);
+    fp = NULL;
+    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/statm")||!(fp = fopen(fullDir, "r"))){
+        printf("Library call failed.\n");
+        return 1;
     }
-
+    if(fscanf(fp, "%lu",&size) != 1)
+        printf("statm file format failed.\n");
+    fclose(fp);
+    fp = NULL;
+    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/cmdline")||!(fp = fopen(fullDir, "r"))){
+        printf("Library call failed.\n");
+        return 1;
+    }
+    fseek(fp, 0, SEEK_END);
+    unsigned long fSize = ftell(fp);
+    if(fSize>=MAX_LINE||fread(cmdLine, sizeof(char), fSize, fp)<fSize){
+        printf("Unable to read cmdLine\n");
+    }
+    for(int i = 0; i < fSize; i++){
+        if(cmdLine[i] == '\0'&&i != fSize-1)
+            cmdLine[i] = ' ';
+    }
+    cmdLine[fSize] = '\0';
+    fclose(fp);
+    fp = NULL;
+    // output
+    printf("%s\t", optionFlags.pid);
+    if(optionFlags.s)
+        printf("%c\t", state);
+    if(optionFlags.s)
+        printf("%c\t", state);
+    if(optionFlags.U)
+        printf("%lu\t", utime);
+    if(optionFlags.S)
+        printf("%lu\t", stime);
+    if(optionFlags.v)
+        printf("%lu\t", size);
+    if(optionFlags.c)
+        printf("%s",cmdLine);
+    printf("\n");
 }
 
 /*
- * Return: 1 if user consist, 0 if not
+ * Return: 1 if passed user check, 0 if not
  */
 int checkUser(const char* const fullDir){
     const int MAX_LINE = 2048;
@@ -74,3 +110,4 @@ int checkUser(const char* const fullDir){
         return 1;
     }
 }
+
