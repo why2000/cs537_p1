@@ -5,7 +5,7 @@
 |Name|CSlogin|NetID|
 |----|-------|-----|
 |Hanyuan Wu|hanyuan|hwu384|
-|Zhihao Shu|Space|Space|
+|Zhihao Shu|hshu|zshu9|
 
 ## Install
 
