@@ -7,6 +7,11 @@
 |Hanyuan Wu|hanyuan|hwu384|
 |Zhihao Shu|Space|Space|
 
+## Install
+
+* `cd cs537_p1`
+* `bash> make`
+
 ## Usage
 
 * 537ps [-p \<pid\>] [-s[-]] [-U[-]] [-S[-]] [-v[-]] [-c[-]]
