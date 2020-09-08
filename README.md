@@ -9,7 +9,7 @@
 
 ## Install
 
-* `cd cs537_p1`
+* `bash> cd cs537_p1`
 * `bash> make`
 
 ## Usage

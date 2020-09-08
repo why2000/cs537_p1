@@ -1,3 +1,5 @@
+
+
 537ps: 537ps.o dirParser.o procParser.o optionParser.o
 	gcc -o 537ps 537ps.o dirParser.o procParser.o optionParser.o
 
@@ -19,4 +21,4 @@ optionParser.o: optionParser.c optionParser.h
 
 
 clean:
-	rm 537ps 537ps.o dirParser.o procParser.o optionParser.o
+	-rm 537ps 537ps.o dirParser.o procParser.o optionParser.o
