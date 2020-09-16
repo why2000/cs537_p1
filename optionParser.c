@@ -17,13 +17,19 @@ int setBinaryOption(int* const flag){
 
 int parseOption(const int argc, char* argv[], OptionFlags* const optionFlags){
     const int MAX_LINE = 1024;
-    const char* const optStr = "p:s::U::S::v::c::";
+    const char* const optStr = "p:s::U::S::v::c::m:";
     int opt;
     int argFlag = 0;
     opterr = 0;
+    int count = 0;
     while((opt=getopt(argc, argv, optStr)) != -1){
         switch(opt){
             case 'p':
+		    if(count > 1){
+			printf("cant have multiple -p.\n");
+			return 1;
+		    }
+		    count++;
                 optionFlags->p=1;
                 if(!(optionFlags->pid = (char*)malloc(sizeof(char)*MAX_LINE))
                    ||!strncpy(optionFlags->pid, optarg, MAX_LINE)){
@@ -47,9 +53,17 @@ int parseOption(const int argc, char* argv[], OptionFlags* const optionFlags){
             case 'c':
                 argFlag = setBinaryOption(&optionFlags->c);
                 break;
+            case 'm':
+                argFlag = setBinaryOption(&optionFlags->m);
+                if(!(optionFlags->addr = atoi(optarg))
+                   || !(optionFlags->len = atoi(argv[optind]))){
+                    printf("Unable to parse mem address and length.\n");
+                    return 1;
+                }
+                break;
             default:
                 printf("Unknown option: -%c\n"
-                       "Usage: ps537 [-p <pid>] [-s[-]] [-U[-]] [-S[-]] [-v[-]] [-c[-]]\n", optopt);
+                       "Usage: ps537 [-p <pid>] [-s[-]] [-U[-]] [-S[-]] [-v[-]] [-c[-]] [-m <addr> <len>]\n", optopt);
                 return 1;
         }
         if(argFlag != 0) {

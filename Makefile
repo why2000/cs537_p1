@@ -1,7 +1,7 @@
 
 
 537ps: 537ps.o dirParser.o procParser.o optionParser.o
-	gcc -o 537ps 537ps.o dirParser.o procParser.o optionParser.o
+	gcc -Wall -o 537ps 537ps.o dirParser.o procParser.o optionParser.o
 
 
 537ps.o: 537ps.c dirParser.h procParser.h optionParser.h

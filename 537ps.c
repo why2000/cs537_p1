@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[]){
 
-    OptionFlags optionFlags = {.p=0,.s=0,.U=1,.S=1,.v=0,.c=1};
+    OptionFlags optionFlags = {.p=0,.s=0,.U=1,.S=1,.v=0,.c=1,.m=0};
     const char* rootName = "/proc/";
     if(parseOption(argc, argv, &optionFlags) != 0)
         return 1;
@@ -23,6 +23,8 @@ int main(int argc, char* argv[]){
         printf("%-10s", "SIZE");
     if(optionFlags.c)
         printf("%-10s", "CMDLINE");
+    if(optionFlags.m)
+        printf("%-10s", "MEM");
     printf("\n");
     if(optionFlags.p){
         parseSingleProc(rootName, optionFlags, 0);

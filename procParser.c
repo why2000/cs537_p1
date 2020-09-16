@@ -3,13 +3,20 @@
 //zhihao shu
 
 #include "procParser.h"
+#include <sys/ptrace.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+
 
 int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, const int checkUserFlag){
     const int MAX_LINE = 2048;
     FILE* fp;
     char procDir[MAX_LINE], fullDir[MAX_LINE];
     if(!strncpy(procDir, rootName, MAX_LINE)||(procDir[MAX_LINE-1] = '\0', !strcat(procDir, optionFlags.pid))){
-        printf("Library call failed.\n");
+        printf("Library call failed 1.\n");
         return 1;
     }
     // now all strings are safe, use strcpy for convenience
@@ -23,7 +30,7 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     }
     // read info
     if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/stat")||!(fp = fopen(fullDir, "r"))){
-        printf("Library call failed.\n");
+        printf("Library call failed 2.\n");
         return 1;
     }
     char state;
@@ -35,7 +42,7 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     fclose(fp);
     fp = NULL;
     if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/statm")||!(fp = fopen(fullDir, "r"))){
-        printf("Library call failed.\n");
+        printf("Library call failed 3.\n");
         return 1;
     }
     if(fscanf(fp, "%lu",&size) != 1)
@@ -43,7 +50,7 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     fclose(fp);
     fp = NULL;
     if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/cmdline")||!(fp = fopen(fullDir, "r"))){
-        printf("Library call failed.\n");
+        printf("Library call failed 4.\n");
         return 1;
     }
     unsigned int fSize;
@@ -57,6 +64,43 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     cmdLine[fSize] = '\0';
     fclose(fp);
     fp = NULL;
+    
+    //read from mem by using ptrace
+    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/mem")){
+        printf("Library call failed 5.\n");
+        return 1;
+    }
+    int status;
+    char* mem;
+    mem = (char *) calloc(optionFlags.len+1,sizeof(char));
+    int pid;
+    pid = fork();
+    if (pid < 0)
+    perror("fork");
+    if(pid == 0){
+        ptrace(PTRACE_ATTACH, optionFlags.pid, NULL, NULL);
+        waitpid(pid, NULL, 0);
+	int f_read = open(fullDir, O_RDONLY);
+	if(f_read < 0){
+		perror("f_read open");
+		exit(1);
+	}
+        lseek(f_read, optionFlags.addr, SEEK_SET);
+        read(f_read, mem, optionFlags.len);
+        mem[optionFlags.len] = '\0';
+        ptrace(PTRACE_DETACH, optionFlags.pid, NULL, NULL);
+        //close the file
+	if(close(f_read)<0){
+		perror("f_read close");
+		exit(1);
+	}
+    }
+    
+    
+    //wait child to be finished
+    wait(&status);
+    
+    
     // output
     printf("%-10s", optionFlags.pid);
     if(optionFlags.s)
@@ -69,6 +113,11 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
         printf("%-10lu", size);
     if(optionFlags.c)
         printf("%s",cmdLine);
+    if(optionFlags.m){
+        for(int i=0; i<optionFlags.len;i++){
+            printf("%-5c",mem[i]);
+        }
+    }
     printf("\n");
 }
 

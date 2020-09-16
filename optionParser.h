@@ -15,7 +15,10 @@ typedef struct {
     int S;
     int v;
     int c;
+    int m;
     char* pid;
+    int addr;
+    int len;
 } OptionFlags;
 
 /* Input:
