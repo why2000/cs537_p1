@@ -6,12 +6,15 @@
 
 
 int setBinaryOption(int* const flag){
-    if(optarg != NULL && strcmp(optarg, "-") == 0)
+    if(optarg != NULL && strcmp(optarg, "-") == 0){
         *flag = 0;
-    else if(optarg == NULL)
+    }
+    else if(optarg == NULL){
         *flag = 1;
-    else
+    }
+    else{
         return 1;
+    }
     return 0;
 }
 
@@ -54,8 +57,14 @@ int parseOption(const int argc, char* argv[], OptionFlags* const optionFlags){
                 argFlag = setBinaryOption(&optionFlags->c);
                 break;
             case 'm':
-                argFlag = setBinaryOption(&optionFlags->m);
-                if(!(optionFlags->addr = atoi(optarg))
+                argFlag = 0;
+		optionFlags->m = 1;
+                if(argv[optind] == NULL || argv[optind+1] != NULL){ // if only have one argument or more than 2 argument 
+			argFlag = 1;
+		}
+	//	printf("flag: %ls\n",&optionFlags->m);
+	//	printf("%d\n",argFlag);
+		if(!(optionFlags->addr = atoi(optarg))
                    || !(optionFlags->len = atoi(argv[optind]))){
                     printf("Unable to parse mem address and length.\n");
                     return 1;
@@ -67,7 +76,7 @@ int parseOption(const int argc, char* argv[], OptionFlags* const optionFlags){
                 return 1;
         }
         if(argFlag != 0) {
-            printf("Invalid argument for option -%c\n", opt);
+            printf("Invalid argument for option -%s\n", optarg);
             return 1;
         }
     }

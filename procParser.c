@@ -80,7 +80,8 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     if(pid == 0){
         ptrace(PTRACE_ATTACH, optionFlags.pid, NULL, NULL);
         waitpid(pid, NULL, 0);
-	int f_read = open(fullDir, O_RDONLY);
+	printf("mem dir: %s\n",fullDir);
+	int f_read = open(fullDir, O_RDONLY); //permission denied at this line
 	if(f_read < 0){
 		perror("f_read open");
 		exit(1);
@@ -115,7 +116,7 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
         printf("%s",cmdLine);
     if(optionFlags.m){
         for(int i=0; i<optionFlags.len;i++){
-            printf("%-5c",mem[i]);
+            printf("%-10c",mem[i]);
         }
     }
     printf("\n");
