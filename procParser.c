@@ -1,6 +1,6 @@
 //
-// Created by hanyuan on 9/7/20.
-//zhihao shu
+// Created by Hanyuan Wu on 9/7/20.
+// team members: Hanyuan Wu, Zhihao Shu
 
 #include "procParser.h"
 

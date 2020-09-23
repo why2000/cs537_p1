@@ -1,6 +1,6 @@
 //
-// Created by hanyuan on 9/7/20.
-// zhihao shu
+// Created by Hanyuan Wu on 9/7/20.
+// team members: Hanyuan Wu, Zhihao Shu
 
 #ifndef CS537_P1_DIRPARSER_H
 #define CS537_P1_DIRPARSER_H
