@@ -3,16 +3,8 @@
 //zhihao shu
 
 #include "procParser.h"
-#include <sys/ptrace.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-
 
 int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, const int checkUserFlag){
-    const int MAX_LINE = 2048;
     FILE* fp;
     char procDir[MAX_LINE], fullDir[MAX_LINE];
     if(!strncpy(procDir, rootName, MAX_LINE)||(procDir[MAX_LINE-1] = '\0', !strcat(procDir, optionFlags.pid))){
@@ -25,10 +17,10 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
             printf("String action failed.\n");
             return 1;
         }
-        if(!checkUser(fullDir))
+        if(checkUser(fullDir) != 0)
             return 0; // skip this proc
     }
-    // read info
+    //stat
     if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/stat")||!(fp = fopen(fullDir, "r"))){
         printf("Library call failed 2.\n");
         return 1;
@@ -39,16 +31,24 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     if(fscanf(fp, "%*d %*s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu",
               &state, &utime, &stime) != 3)
         printf("stat file format failed.\n");
-    fclose(fp);
+    if (fclose(fp) < 0) {
+        perror("file close error");
+        exit(1);
+    }
     fp = NULL;
+    //statm
     if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/statm")||!(fp = fopen(fullDir, "r"))){
         printf("Library call failed 3.\n");
         return 1;
     }
     if(fscanf(fp, "%lu",&size) != 1)
         printf("statm file format failed.\n");
-    fclose(fp);
+    if (fclose(fp) < 0) {
+        perror("file close error");
+        exit(1);
+    }
     fp = NULL;
+    //cmdline
     if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/cmdline")||!(fp = fopen(fullDir, "r"))){
         printf("Library call failed 4.\n");
         return 1;
@@ -62,45 +62,12 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
             cmdLine[i] = ' ';
     }
     cmdLine[fSize] = '\0';
-    fclose(fp);
+    if (fclose(fp) < 0) {
+        perror("file close error");
+        exit(1);
+    }
     fp = NULL;
-    
-    //read from mem by using ptrace
-    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/mem")){
-        printf("Library call failed 5.\n");
-        return 1;
-    }
-    int status;
-    char* mem;
-    mem = (char *) calloc(optionFlags.len+1,sizeof(char));
-    int pid;
-    pid = fork();
-    if (pid < 0)
-    perror("fork");
-    if(pid == 0){
-        ptrace(PTRACE_ATTACH, optionFlags.pid, NULL, NULL);
-        waitpid(pid, NULL, 0);
-	printf("mem dir: %s\n",fullDir);
-	int f_read = open(fullDir, O_RDONLY); //permission denied at this line
-	if(f_read < 0){
-		perror("f_read open");
-		exit(1);
-	}
-        lseek(f_read, optionFlags.addr, SEEK_SET);
-        read(f_read, mem, optionFlags.len);
-        mem[optionFlags.len] = '\0';
-        ptrace(PTRACE_DETACH, optionFlags.pid, NULL, NULL);
-        //close the file
-	if(close(f_read)<0){
-		perror("f_read close");
-		exit(1);
-	}
-    }
-    
-    
-    //wait child to be finished
-    wait(&status);
-    
+
     
     // output
     printf("%-10s", optionFlags.pid);
@@ -113,20 +80,85 @@ int parseSingleProc(const char* const rootName, const OptionFlags optionFlags, c
     if(optionFlags.v)
         printf("%-10lu", size);
     if(optionFlags.c)
-        printf("%s",cmdLine);
+        printf("%s ",cmdLine);
     if(optionFlags.m){
-        for(int i=0; i<optionFlags.len;i++){
-            printf("%-10c",mem[i]);
+        printf("\t%llx: ", optionFlags.addr);
+        unsigned char *mem = (unsigned char*) malloc(sizeof(unsigned char)*optionFlags.len);
+        long long realLen = 0;
+        if(parseMem(&mem, &realLen, optionFlags, procDir) == 0) {
+            for (int i = 0; i < realLen ; i++) {
+                if (i != 0)
+                    printf(" ");
+                printf("%02x", mem[i]);
+            }
+
+            free(mem);
+            mem = NULL;
         }
+        else
+            printf("NOT AVAILABLE");
     }
     printf("\n");
 }
 
-/*
- * Return: 1 if passed user check, 0 if not
- */
+int parseMem(unsigned char** mem, long long* realLen, const OptionFlags optionFlags, const char* const procDir){
+    char buf[MAX_LINE], fullDir[MAX_LINE];
+    long long memBegin, memEnd;
+    int mapsFlag = 0;
+    FILE* fp;
+    //maps
+    if(!strcpy(fullDir, procDir)||!strcat(fullDir, "/maps")||!(fp = fopen(fullDir, "r"))){
+        printf("Library call failed 3.\n");
+        return 1;
+    }
+
+    while(fgets(buf, MAX_LINE, fp)){
+        if(sscanf(buf, "%llx-%llx%*s", &memBegin, &memEnd) == 2){
+            if(optionFlags.addr >= memBegin && optionFlags.addr < memEnd){
+                *realLen = memEnd-optionFlags.addr;
+                *realLen = (*realLen < optionFlags.len? *realLen: optionFlags.len);
+                mapsFlag = 1;
+            }
+        }
+    }
+    if (fclose(fp) < 0) {
+        perror("file close error");
+        exit(1);
+    }
+    fp = NULL;
+    if(!mapsFlag)
+        return 1;
+    //read from mem by using ptrace
+    if (!strcpy(fullDir, procDir) || !strcat(fullDir, "/mem")) {
+        printf("Library call failed 5.\n");
+        return 1;
+    }
+
+
+    pid_t pid = atoi(optionFlags.pid);
+
+    if (ptrace(PTRACE_ATTACH, pid, NULL, NULL) == -1)
+        return 1;
+    waitpid(pid, NULL, 0);
+    int f_read; //permission denied at this line
+    if ((f_read = open(fullDir, O_RDONLY)) < 0)
+        return 1;
+    if (lseek(f_read, optionFlags.addr, SEEK_SET) < 0)
+        return 1;
+    if (read(f_read, *mem, *realLen) < 0)
+        return 1;
+    ptrace(PTRACE_DETACH, pid, NULL, NULL);
+    //close the file
+    if (close(f_read) < 0) {
+        perror("file close error");
+        exit(1);
+    }
+    return 0;
+}
+
+
+
 int checkUser(const char* const fullDir){
-    const int MAX_LINE = 2048;
     char buf[MAX_LINE];
     uid_t uid = getuid();
     FILE* fp;
@@ -136,26 +168,31 @@ int checkUser(const char* const fullDir){
     int sameUidFlag = 0;
     while(fgets(buf, MAX_LINE, fp)){
         if(strncmp(buf, "Uid:", 4) == 0){
-            fclose(fp);
+            // close fp before return
+            if (fclose(fp) < 0) {
+                perror("file close error");
+                exit(1);
+            }
             fp = NULL;
             uid_t realUid;
             if(sscanf(buf, "%*s\t%d", &realUid)!=1){
                 // Unable to read uid: should belong to another user
                 //printf("Unable to read uid.\n");
+                return 1;
+            }
+            if(realUid == uid){
                 return 0;
             }
-            if(realUid == uid)
-                sameUidFlag = 1;
             else
-                return 0;
-            break;
+                return 1;
         }
     }
-    // No Uid found in status
-    if(!sameUidFlag){
-        fclose(fp);
-        fp = NULL;
-        return 1;
+    if (fclose(fp) < 0) {
+        perror("file close error");
+        exit(1);
     }
+    fp = NULL;
+    // if no line contains uid
+    return 1;
 }
 

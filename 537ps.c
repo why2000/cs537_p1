@@ -27,8 +27,15 @@ int main(int argc, char* argv[]){
         printf("%-10s", "MEM");
     printf("\n");
     if(optionFlags.p){
-        parseSingleProc(rootName, optionFlags, 0);
-        free(optionFlags.pid);
+        for(int i = 0; i < optionFlags.p; i++) {
+            if(!(optionFlags.pid = (char*)malloc(sizeof(char)*MAX_LINE))
+               ||!strncpy(optionFlags.pid, optionFlags.pids[i], MAX_LINE)){
+                //printf("Unable to parse pid.\n");
+                return 1;
+            }
+            parseSingleProc(rootName, optionFlags, 0);
+            free(optionFlags.pid);
+        }
     }
     else{
         parseDir(rootName, optionFlags);

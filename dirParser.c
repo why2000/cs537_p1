@@ -20,14 +20,13 @@ int parseDir(const char* const rootName, OptionFlags optionFlags){
 }
 
 int parsePid(const char name[], char** pid){
-    const int MAX_LINE = 1024;
     if(!(*pid = (char*)malloc(sizeof(char)*MAX_LINE))){
-        printf("Unable to allocate space.");
+        //printf("Unable to allocate space.");
         return 1;
     }
     unsigned int len;
     if((len = strlen(name))>=MAX_LINE||len==0){
-        printf("Dir name length not supported.");
+        //printf("Dir name length not supported.");
         return 1;
     }
     for(unsigned int i = 0; i < len; i++){

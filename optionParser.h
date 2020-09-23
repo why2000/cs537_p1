@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#define MAX_LINE 2048
 typedef struct {
     int p;
     int s;
@@ -17,8 +18,9 @@ typedef struct {
     int c;
     int m;
     char* pid;
-    int addr;
-    int len;
+    char* pids[MAX_LINE];
+    long long addr;
+    long long len;
 } OptionFlags;
 
 /* Input:
