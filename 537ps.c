@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[]){
 
-    OptionFlags optionFlags = {.p=0,.s=0,.U=1,.S=1,.v=0,.c=1,.m=0};
+    OptionFlags optionFlags = {.p=0,.s=0,.U=1,.S=0,.v=0,.c=1,.m=0};
     const char* rootName = "/proc/";
     if(parseOption(argc, argv, &optionFlags) != 0)
         return 1;
