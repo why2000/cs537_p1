@@ -1,11 +1,15 @@
 # CS537 P1 (537ps)
 
+## Claiming:
+
+* **This project repo will be make public only AFTER the assignment is due**
+
 ## Author:
 
 |Name|CSlogin|NetID|
 |----|-------|-----|
-|Hanyuan Wu|hanyuan|hwu384|
-|Zhihao Shu|hshu|zshu9|
+|Hanyuan Wu|CENSORED|CENSORED|
+|Zhihao Shu|CENSORED|CENSORED|
 
 ## Install
 
