@@ -4,6 +4,8 @@
 
 * **This project repo will be make public only AFTER the assignment is due**
 
+## Grade: 11/10
+
 ## Author:
 
 |Name|CSlogin|NetID|
